@@ -1,0 +1,45 @@
+{
+  "name": "occult-api-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for the Occult API - Vedic astrology calculations for AI assistants.",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "astrology",
+    "vedic",
+    "panchang",
+    "occult-api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "typescript": "^7.0.2"
+  },
+  "bin": {
+    "occult-api-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yogatara24/occult-api-mcp.git"
+  },
+  "homepage": "https://occultapi.com",
+  "bugs": {
+    "url": "https://github.com/Yogatara24/occult-api-mcp/issues"
+  }
+}
