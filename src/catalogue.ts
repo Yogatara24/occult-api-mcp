@@ -62,32 +62,42 @@ export class Catalogue {
   }
 
   /**
-   * Match on the endpoint name AND on its keys.
+   * Match on the endpoint name AND on its keys, one word at a time.
    *
    * The keys are the point: roughly 420 named calculations sit behind ~90
    * endpoints, and nobody looking for "manglik" would guess it lives in
    * /api/astro/dosha/. Searching names alone would make most of the catalogue
    * unreachable in practice.
+   *
+   * Scored per WORD rather than on the whole phrase, because the caller is an
+   * assistant relaying how a person actually asked: "marriage compatibility
+   * matching" contains the answer but matches nothing as a literal substring,
+   * and a bare "no results" is where the assistant gives up and guesses.
    */
   async search(query: string, limit = 12): Promise<Array<Summary & { matchedKeys: string[] }>> {
-    const term = query.trim().toLowerCase();
     const all = await this.endpoints();
-    if (!term) return all.slice(0, limit).map((e) => ({ ...e, matchedKeys: [] }));
+    const words = tokenize(query);
+    if (words.length === 0) return all.slice(0, limit).map((e) => ({ ...e, matchedKeys: [] }));
 
     const scored = all
       .map((e) => {
-        const matchedKeys = e.keys.filter((k) => k.toLowerCase().includes(term));
-        const inName =
-          e.name.toLowerCase().includes(term) ||
-          e.route.toLowerCase().includes(term) ||
-          (e.title || "").toLowerCase().includes(term);
-        // An exact key match is the strongest signal — it means the caller
-        // named a specific calculation rather than a topic.
-        const score =
-          (e.keys.some((k) => k.toLowerCase() === term) ? 100 : 0) +
-          (inName ? 10 : 0) +
-          matchedKeys.length;
-        return { ...e, matchedKeys, score };
+        const haystack = `${e.name} ${e.route} ${e.title ?? ""}`.toLowerCase();
+        const matchedKeys = new Set<string>();
+        let score = 0;
+
+        for (const word of words) {
+          // An exact key match is the strongest signal — the caller named a
+          // specific calculation rather than a topic.
+          if (e.keys.some((k) => k.toLowerCase() === word)) score += 100;
+          if (haystack.includes(word)) score += 10;
+          for (const k of e.keys) {
+            if (k.toLowerCase().includes(word)) {
+              matchedKeys.add(k);
+              score += 1;
+            }
+          }
+        }
+        return { ...e, matchedKeys: [...matchedKeys], score };
       })
       .filter((e) => e.score > 0)
       .sort((a, b) => b.score - a.score)
@@ -118,4 +128,23 @@ export class Catalogue {
     const payload = (await response.json()) as { data?: T };
     return (payload.data ?? payload) as T;
   }
+}
+
+/**
+ * Words worth matching on. Drops the filler a person's phrasing carries into
+ * the query, which would otherwise match everything or nothing at random.
+ */
+const STOPWORDS = new Set([
+  "a", "an", "the", "of", "for", "in", "on", "to", "and", "or", "my", "me",
+  "is", "are", "was", "what", "whats", "how", "get", "find", "show", "tell",
+  "give", "calculate", "chart", "please", "can", "you", "i", "do", "does",
+]);
+
+function tokenize(query: string): string[] {
+  return [...new Set(
+    query
+      .toLowerCase()
+      .split(/[^a-z0-9_]+/)
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w)),
+  )];
 }
