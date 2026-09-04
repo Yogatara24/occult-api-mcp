@@ -1,6 +1,6 @@
 {
   "name": "occult-api-mcp",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server for the Occult API - Vedic astrology calculations for AI assistants.",
   "scripts": {
     "build": "tsc",

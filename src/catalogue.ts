@@ -26,6 +26,12 @@ export type Summary = {
 };
 
 export type Detail = Summary & {
+  /**
+   * The URL with named placeholders, e.g. /api/astrodatabank/celebrities/{id}/.
+   * Absent on older servers, in which case `route` is already the full path.
+   */
+  path_template?: string;
+  path_params?: Array<{ name: string; type: string; required: boolean; description: string }>;
   fields: Array<{
     name: string;
     type: string;
@@ -147,4 +153,28 @@ function tokenize(query: string): string[] {
       .split(/[^a-z0-9_]+/)
       .filter((w) => w.length > 2 && !STOPWORDS.has(w)),
   )];
+}
+
+/**
+ * Put path parameters into the URL and return what is left for the body or
+ * query string.
+ *
+ * A path parameter is part of the address, not something attached to it. Sent
+ * as a query parameter the request goes to the literal template and 404s, which
+ * an assistant reports as "that record does not exist" rather than "I built the
+ * URL wrong".
+ */
+export function resolvePath(
+  detail: Detail,
+  params: Record<string, unknown>,
+): { path: string; rest: Record<string, unknown> } {
+  const template = detail.path_template ?? detail.route;
+  const rest = { ...params };
+  const path = template.replace(/\{([^}]+)\}/g, (whole, name: string) => {
+    const value = rest[name];
+    if (value === undefined || value === null || value === "") return whole;
+    delete rest[name];
+    return encodeURIComponent(String(value));
+  });
+  return { path, rest };
 }

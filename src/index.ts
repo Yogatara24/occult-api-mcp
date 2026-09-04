@@ -20,7 +20,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { ApiError, DEFAULT_BASE_URL, OccultClient } from "./api.js";
-import { Catalogue } from "./catalogue.js";
+import { Catalogue, resolvePath } from "./catalogue.js";
 
 const API_KEY = (process.env.OCCULT_API_KEY ?? "").trim();
 const BASE_URL = (process.env.OCCULT_API_URL ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
@@ -29,7 +29,9 @@ const client = new OccultClient(API_KEY, BASE_URL);
 const catalogue = new Catalogue(BASE_URL);
 
 const server = new McpServer(
-  { name: "occult-api", version: "0.1.0" },
+  // Kept in step with package.json by hand; a client shows this in its server
+  // list, and a stale number makes "which version am I running" unanswerable.
+  { name: "occult-api", version: "0.2.0" },
   {
     instructions:
       "Vedic astrology calculations from the Occult API. Use search_endpoints to " +
@@ -161,6 +163,9 @@ server.registerTool(
         cost_credits: detail.cost_credits,
         fields: detail.fields,
         query_params: detail.query_params,
+        // Part of the URL rather than the body. Pass them in `body` anyway —
+        // call_endpoint substitutes them into the path.
+        path_params: detail.path_params,
         keys: detail.keys,
         // The bodies in the catalogue were run against a live server, so this is
         // a proven starting point rather than a guess from the schema.
@@ -198,10 +203,11 @@ server.registerTool(
     if (missing) return failure(new Error(missing));
     try {
       const detail = await catalogue.detail(slug);
+      const { path, rest } = resolvePath(detail, body);
       const result = await client.call(
-        detail.route,
+        path,
         detail.method === "GET" ? "GET" : "POST",
-        body,
+        rest,
       );
       return text({
         result: result.body,
