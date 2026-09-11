@@ -84,7 +84,7 @@ leaked.
 | Variable | Default | Purpose |
 |---|---|---|
 | `OCCULT_API_KEY` | — | Your API key. Without it, search and describe still work; nothing runs. |
-| `OCCULT_API_URL` | `https://yogataraapi.prahlad.app` | Override the API host. |
+| `OCCULT_API_URL` | `https://api.occultapi.com` | Override the API host. |
 
 ## Troubleshooting
 

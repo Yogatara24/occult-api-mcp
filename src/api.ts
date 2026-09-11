@@ -17,7 +17,7 @@ import { gunzipSync } from "node:zlib";
  * astrology. Overridable with OCCULT_API_URL for when the API moves to its own
  * subdomain.
  */
-export const DEFAULT_BASE_URL = "https://yogataraapi.prahlad.app";
+export const DEFAULT_BASE_URL = "https://api.occultapi.com";
 const TIMEOUT_MS = 60_000;
 
 /**
